@@ -671,6 +671,115 @@ void ScummEngine::checkExecVerbs() {
 	}
 }
 
+void ScummEngine::processVerbNavigation() {
+	if (!_verbNavigationEnabled)
+		return;
+
+	// Build list of available verbs
+	Common::Array<int> availableVerbs;
+	VerbSlot *vs = &_verbs[1];
+	for (int i = 1; i < _numVerbs; i++, vs++) {
+		if (vs->verbid && vs->saveid == 0 && vs->curmode == 1) {
+			availableVerbs.push_back(i);
+		}
+	}
+
+	if (availableVerbs.empty())
+		return;
+
+	// Initialize selection if not set
+	if (_selectedVerbIndex < 0 || _selectedVerbIndex >= (int)availableVerbs.size()) {
+		_selectedVerbIndex = 0;
+	}
+
+	// Track if we need to update the display
+	bool selectionChanged = false;
+	int oldSelection = _selectedVerbIndex;
+
+	// Calculate verb layout (typically 2 columns in SCUMM games)
+	int numVerbs = availableVerbs.size();
+	int currentRow = _selectedVerbIndex / 2;
+	int currentCol = _selectedVerbIndex % 2;
+
+	// Process navigation actions
+	if (_actionMap[kScummActionVerbUp] && !_actionMap[kScummActionVerbDown]) {
+		// Move up
+		if (currentRow > 0) {
+			_selectedVerbIndex -= 2;
+		} else {
+			// Wrap to bottom
+			_selectedVerbIndex = numVerbs - 1 - currentCol;
+			if (_selectedVerbIndex >= numVerbs)
+				_selectedVerbIndex = numVerbs - 1;
+		}
+		selectionChanged = true;
+		// Consume the action
+		_actionMap[kScummActionVerbUp] = false;
+	} else if (_actionMap[kScummActionVerbDown] && !_actionMap[kScummActionVerbUp]) {
+		// Move down
+		int nextIndex = _selectedVerbIndex + 2;
+		if (nextIndex < numVerbs) {
+			_selectedVerbIndex = nextIndex;
+		} else {
+			// Wrap to top
+			_selectedVerbIndex = currentCol;
+		}
+		selectionChanged = true;
+		// Consume the action
+		_actionMap[kScummActionVerbDown] = false;
+	} else if (_actionMap[kScummActionVerbLeft] && !_actionMap[kScummActionVerbRight]) {
+		// Move left
+		if (currentCol > 0) {
+			_selectedVerbIndex--;
+		} else {
+			// Wrap to right column if it exists
+			if (_selectedVerbIndex + 1 < numVerbs) {
+				_selectedVerbIndex++;
+			}
+		}
+		selectionChanged = true;
+		// Consume the action
+		_actionMap[kScummActionVerbLeft] = false;
+	} else if (_actionMap[kScummActionVerbRight] && !_actionMap[kScummActionVerbLeft]) {
+		// Move right
+		if (currentCol < 1 && _selectedVerbIndex + 1 < numVerbs) {
+			_selectedVerbIndex++;
+		} else {
+			// Wrap to left column
+			_selectedVerbIndex--;
+		}
+		selectionChanged = true;
+		// Consume the action
+		_actionMap[kScummActionVerbRight] = false;
+	}
+
+	// Handle verb selection
+	if (_actionMap[kScummActionVerbSelect]) {
+		if (_selectedVerbIndex >= 0 && _selectedVerbIndex < (int)availableVerbs.size()) {
+			int verbSlotIndex = availableVerbs[_selectedVerbIndex];
+			VerbSlot *selectedVerb = &_verbs[verbSlotIndex];
+			// Trigger the selected verb
+			runInputScript(kVerbClickArea, selectedVerb->verbid, 1);
+		}
+		// Consume the action
+		_actionMap[kScummActionVerbSelect] = false;
+	}
+
+	// Update display if selection changed
+	if (selectionChanged && oldSelection != _selectedVerbIndex) {
+		// Redraw old verb in normal state
+		if (oldSelection >= 0 && oldSelection < (int)availableVerbs.size()) {
+			int oldVerbSlot = availableVerbs[oldSelection];
+			drawVerb(oldVerbSlot, 0);
+		}
+		// Redraw new verb in highlighted state
+		if (_selectedVerbIndex >= 0 && _selectedVerbIndex < (int)availableVerbs.size()) {
+			int newVerbSlot = availableVerbs[_selectedVerbIndex];
+			drawVerb(newVerbSlot, 1);  // 1 = highlight mode
+		}
+	}
+}
+
 void ScummEngine_v2::checkExecVerbs() {
 	int i, over;
 	VerbSlot *vs;

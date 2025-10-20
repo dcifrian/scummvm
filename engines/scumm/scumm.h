@@ -493,6 +493,13 @@ enum ScummAction {
 	kScummActionInsaneSwitch,
 	kScummActionInsaneCheat,
 
+	// Verb navigation actions for gamepad/controller
+	kScummActionVerbUp,
+	kScummActionVerbDown,
+	kScummActionVerbLeft,
+	kScummActionVerbRight,
+	kScummActionVerbSelect,
+
 	kScummActionCount
 };
 
@@ -1223,9 +1230,14 @@ protected:
 	int8 _userPut = 0;
 	uint16 _userState = 0;
 
+	// Verb navigation state for gamepad/controller
+	int _selectedVerbIndex = -1;    // Index of currently selected verb (-1 = none)
+	bool _verbNavigationEnabled = true;  // Enable/disable verb navigation mode
+
 	virtual void handleMouseOver(bool updateInventory);
 	virtual void redrawVerbs();
 	virtual void checkExecVerbs();
+	void processVerbNavigation();  // Process D-pad verb navigation
 
 	void verbMouseOver(int verb);
 	int findVerbAtPos(int x, int y) const;

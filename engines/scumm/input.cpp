@@ -528,6 +528,9 @@ void ScummEngine::processInput() {
 	_leftBtnPressed &= ~msClicked;
 	_rightBtnPressed &= ~msClicked;
 
+	// Process verb navigation (D-pad/gamepad control)
+	processVerbNavigation();
+
 	if (!lastKeyHit.ascii)
 		return;
 
