@@ -706,6 +706,7 @@ void ScummEngine::processVerbNavigation() {
 	// Process navigation actions using spatial positioning
 	if (_actionMap[kScummActionVerbUp] && !_actionMap[kScummActionVerbDown]) {
 		// Find the verb that is above and closest to current position
+		// Prioritize vertical distance over horizontal distance
 		int bestIndex = -1;
 		int bestDistance = 999999;
 
@@ -720,7 +721,8 @@ void ScummEngine::processVerbNavigation() {
 			if (candY < currentY) {
 				int dx = candX - currentX;
 				int dy = candY - currentY;
-				int distance = dx * dx + dy * dy;
+				// Weight vertical distance more heavily for up/down navigation
+				int distance = dx * dx + dy * dy * 4;
 
 				if (distance < bestDistance) {
 					bestDistance = distance;
@@ -731,13 +733,17 @@ void ScummEngine::processVerbNavigation() {
 
 		// If no verb above, wrap to bottom
 		if (bestIndex == -1) {
-			bestDistance = -999999;
+			bestDistance = 999999;
 			for (int i = 0; i < numVerbs; i++) {
 				if (i == _selectedVerbIndex) continue;
 				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
 				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
-				if (candY > bestDistance) {
-					bestDistance = candY;
+				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+				int dx = candX - currentX;
+				// Find bottommost verb closest to current X
+				int distance = dx * dx + (999999 - candY) * (999999 - candY) / 1000;
+				if (distance < bestDistance) {
+					bestDistance = distance;
 					bestIndex = i;
 				}
 			}
@@ -751,6 +757,7 @@ void ScummEngine::processVerbNavigation() {
 
 	} else if (_actionMap[kScummActionVerbDown] && !_actionMap[kScummActionVerbUp]) {
 		// Find the verb that is below and closest to current position
+		// Prioritize vertical distance over horizontal distance
 		int bestIndex = -1;
 		int bestDistance = 999999;
 
@@ -765,7 +772,8 @@ void ScummEngine::processVerbNavigation() {
 			if (candY > currentY) {
 				int dx = candX - currentX;
 				int dy = candY - currentY;
-				int distance = dx * dx + dy * dy;
+				// Weight vertical distance more heavily for up/down navigation
+				int distance = dx * dx + dy * dy * 4;
 
 				if (distance < bestDistance) {
 					bestDistance = distance;
@@ -781,8 +789,12 @@ void ScummEngine::processVerbNavigation() {
 				if (i == _selectedVerbIndex) continue;
 				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
 				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
-				if (candY < bestDistance) {
-					bestDistance = candY;
+				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+				int dx = candX - currentX;
+				// Find topmost verb closest to current X
+				int distance = dx * dx + candY * candY / 1000;
+				if (distance < bestDistance) {
+					bestDistance = distance;
 					bestIndex = i;
 				}
 			}
@@ -796,6 +808,7 @@ void ScummEngine::processVerbNavigation() {
 
 	} else if (_actionMap[kScummActionVerbLeft] && !_actionMap[kScummActionVerbRight]) {
 		// Find the verb that is to the left and closest to current position
+		// Prioritize horizontal distance over vertical distance
 		int bestIndex = -1;
 		int bestDistance = 999999;
 
@@ -810,7 +823,8 @@ void ScummEngine::processVerbNavigation() {
 			if (candX < currentX) {
 				int dx = candX - currentX;
 				int dy = candY - currentY;
-				int distance = dx * dx + dy * dy;
+				// Weight horizontal distance more heavily for left/right navigation
+				int distance = dx * dx * 4 + dy * dy;
 
 				if (distance < bestDistance) {
 					bestDistance = distance;
@@ -821,13 +835,17 @@ void ScummEngine::processVerbNavigation() {
 
 		// If no verb to the left, wrap to right
 		if (bestIndex == -1) {
-			bestDistance = -999999;
+			bestDistance = 999999;
 			for (int i = 0; i < numVerbs; i++) {
 				if (i == _selectedVerbIndex) continue;
 				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
 				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
-				if (candX > bestDistance) {
-					bestDistance = candX;
+				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+				int dy = candY - currentY;
+				// Find rightmost verb closest to current Y
+				int distance = (999999 - candX) * (999999 - candX) / 1000 + dy * dy;
+				if (distance < bestDistance) {
+					bestDistance = distance;
 					bestIndex = i;
 				}
 			}
@@ -841,6 +859,7 @@ void ScummEngine::processVerbNavigation() {
 
 	} else if (_actionMap[kScummActionVerbRight] && !_actionMap[kScummActionVerbLeft]) {
 		// Find the verb that is to the right and closest to current position
+		// Prioritize horizontal distance over vertical distance
 		int bestIndex = -1;
 		int bestDistance = 999999;
 
@@ -855,7 +874,8 @@ void ScummEngine::processVerbNavigation() {
 			if (candX > currentX) {
 				int dx = candX - currentX;
 				int dy = candY - currentY;
-				int distance = dx * dx + dy * dy;
+				// Weight horizontal distance more heavily for left/right navigation
+				int distance = dx * dx * 4 + dy * dy;
 
 				if (distance < bestDistance) {
 					bestDistance = distance;
@@ -871,8 +891,12 @@ void ScummEngine::processVerbNavigation() {
 				if (i == _selectedVerbIndex) continue;
 				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
 				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
-				if (candX < bestDistance) {
-					bestDistance = candX;
+				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+				int dy = candY - currentY;
+				// Find leftmost verb closest to current Y
+				int distance = candX * candX / 1000 + dy * dy;
+				if (distance < bestDistance) {
+					bestDistance = distance;
 					bestIndex = i;
 				}
 			}
