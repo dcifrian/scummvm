@@ -695,61 +695,193 @@ void ScummEngine::processVerbNavigation() {
 	// Track if we need to update the display
 	bool selectionChanged = false;
 	int oldSelection = _selectedVerbIndex;
-
-	// Calculate verb layout (typically 2 columns in SCUMM games)
 	int numVerbs = availableVerbs.size();
-	int currentRow = _selectedVerbIndex / 2;
-	int currentCol = _selectedVerbIndex % 2;
 
-	// Process navigation actions
+	// Get current verb's center position for spatial navigation
+	int currentVerbSlot = availableVerbs[_selectedVerbIndex];
+	VerbSlot *currentVerb = &_verbs[currentVerbSlot];
+	int currentX = (currentVerb->curRect.left + currentVerb->curRect.right) / 2;
+	int currentY = (currentVerb->curRect.top + currentVerb->curRect.bottom) / 2;
+
+	// Process navigation actions using spatial positioning
 	if (_actionMap[kScummActionVerbUp] && !_actionMap[kScummActionVerbDown]) {
-		// Move up
-		if (currentRow > 0) {
-			_selectedVerbIndex -= 2;
-		} else {
-			// Wrap to bottom
-			_selectedVerbIndex = numVerbs - 1 - currentCol;
-			if (_selectedVerbIndex >= numVerbs)
-				_selectedVerbIndex = numVerbs - 1;
-		}
-		selectionChanged = true;
-		// Consume the action
-		_actionMap[kScummActionVerbUp] = false;
-	} else if (_actionMap[kScummActionVerbDown] && !_actionMap[kScummActionVerbUp]) {
-		// Move down
-		int nextIndex = _selectedVerbIndex + 2;
-		if (nextIndex < numVerbs) {
-			_selectedVerbIndex = nextIndex;
-		} else {
-			// Wrap to top
-			_selectedVerbIndex = currentCol;
-		}
-		selectionChanged = true;
-		// Consume the action
-		_actionMap[kScummActionVerbDown] = false;
-	} else if (_actionMap[kScummActionVerbLeft] && !_actionMap[kScummActionVerbRight]) {
-		// Move left
-		if (currentCol > 0) {
-			_selectedVerbIndex--;
-		} else {
-			// Wrap to right column if it exists
-			if (_selectedVerbIndex + 1 < numVerbs) {
-				_selectedVerbIndex++;
+		// Find the verb that is above and closest to current position
+		int bestIndex = -1;
+		int bestDistance = 999999;
+
+		for (int i = 0; i < numVerbs; i++) {
+			if (i == _selectedVerbIndex) continue;
+
+			VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+			int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+			int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+
+			// Only consider verbs that are above (smaller Y)
+			if (candY < currentY) {
+				int dx = candX - currentX;
+				int dy = candY - currentY;
+				int distance = dx * dx + dy * dy;
+
+				if (distance < bestDistance) {
+					bestDistance = distance;
+					bestIndex = i;
+				}
 			}
 		}
-		selectionChanged = true;
-		// Consume the action
-		_actionMap[kScummActionVerbLeft] = false;
-	} else if (_actionMap[kScummActionVerbRight] && !_actionMap[kScummActionVerbLeft]) {
-		// Move right
-		if (currentCol < 1 && _selectedVerbIndex + 1 < numVerbs) {
-			_selectedVerbIndex++;
-		} else {
-			// Wrap to left column
-			_selectedVerbIndex--;
+
+		// If no verb above, wrap to bottom
+		if (bestIndex == -1) {
+			bestDistance = -999999;
+			for (int i = 0; i < numVerbs; i++) {
+				if (i == _selectedVerbIndex) continue;
+				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+				if (candY > bestDistance) {
+					bestDistance = candY;
+					bestIndex = i;
+				}
+			}
 		}
-		selectionChanged = true;
-		// Consume the action
+
+		if (bestIndex >= 0) {
+			_selectedVerbIndex = bestIndex;
+			selectionChanged = true;
+		}
+		_actionMap[kScummActionVerbUp] = false;
+
+	} else if (_actionMap[kScummActionVerbDown] && !_actionMap[kScummActionVerbUp]) {
+		// Find the verb that is below and closest to current position
+		int bestIndex = -1;
+		int bestDistance = 999999;
+
+		for (int i = 0; i < numVerbs; i++) {
+			if (i == _selectedVerbIndex) continue;
+
+			VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+			int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+			int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+
+			// Only consider verbs that are below (larger Y)
+			if (candY > currentY) {
+				int dx = candX - currentX;
+				int dy = candY - currentY;
+				int distance = dx * dx + dy * dy;
+
+				if (distance < bestDistance) {
+					bestDistance = distance;
+					bestIndex = i;
+				}
+			}
+		}
+
+		// If no verb below, wrap to top
+		if (bestIndex == -1) {
+			bestDistance = 999999;
+			for (int i = 0; i < numVerbs; i++) {
+				if (i == _selectedVerbIndex) continue;
+				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+				if (candY < bestDistance) {
+					bestDistance = candY;
+					bestIndex = i;
+				}
+			}
+		}
+
+		if (bestIndex >= 0) {
+			_selectedVerbIndex = bestIndex;
+			selectionChanged = true;
+		}
+		_actionMap[kScummActionVerbDown] = false;
+
+	} else if (_actionMap[kScummActionVerbLeft] && !_actionMap[kScummActionVerbRight]) {
+		// Find the verb that is to the left and closest to current position
+		int bestIndex = -1;
+		int bestDistance = 999999;
+
+		for (int i = 0; i < numVerbs; i++) {
+			if (i == _selectedVerbIndex) continue;
+
+			VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+			int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+			int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+
+			// Only consider verbs that are to the left (smaller X)
+			if (candX < currentX) {
+				int dx = candX - currentX;
+				int dy = candY - currentY;
+				int distance = dx * dx + dy * dy;
+
+				if (distance < bestDistance) {
+					bestDistance = distance;
+					bestIndex = i;
+				}
+			}
+		}
+
+		// If no verb to the left, wrap to right
+		if (bestIndex == -1) {
+			bestDistance = -999999;
+			for (int i = 0; i < numVerbs; i++) {
+				if (i == _selectedVerbIndex) continue;
+				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+				if (candX > bestDistance) {
+					bestDistance = candX;
+					bestIndex = i;
+				}
+			}
+		}
+
+		if (bestIndex >= 0) {
+			_selectedVerbIndex = bestIndex;
+			selectionChanged = true;
+		}
+		_actionMap[kScummActionVerbLeft] = false;
+
+	} else if (_actionMap[kScummActionVerbRight] && !_actionMap[kScummActionVerbLeft]) {
+		// Find the verb that is to the right and closest to current position
+		int bestIndex = -1;
+		int bestDistance = 999999;
+
+		for (int i = 0; i < numVerbs; i++) {
+			if (i == _selectedVerbIndex) continue;
+
+			VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+			int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+			int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+
+			// Only consider verbs that are to the right (larger X)
+			if (candX > currentX) {
+				int dx = candX - currentX;
+				int dy = candY - currentY;
+				int distance = dx * dx + dy * dy;
+
+				if (distance < bestDistance) {
+					bestDistance = distance;
+					bestIndex = i;
+				}
+			}
+		}
+
+		// If no verb to the right, wrap to left
+		if (bestIndex == -1) {
+			bestDistance = 999999;
+			for (int i = 0; i < numVerbs; i++) {
+				if (i == _selectedVerbIndex) continue;
+				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+				if (candX < bestDistance) {
+					bestDistance = candX;
+					bestIndex = i;
+				}
+			}
+		}
+
+		if (bestIndex >= 0) {
+			_selectedVerbIndex = bestIndex;
+			selectionChanged = true;
+		}
 		_actionMap[kScummActionVerbRight] = false;
 	}
 
