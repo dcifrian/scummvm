@@ -923,6 +923,42 @@ Common::KeymapArray ScummMetaEngine::initKeymaps(const char *target) const {
 	Common::String gameId = ConfMan.get("gameid", target);
 	Action *act;
 
+	// Add verb navigation keymap for SCUMM games with verb interfaces
+	// This includes most games from v0-v6 (before Full Throttle's new UI)
+	Keymap *verbNavKeymap = new Keymap(Keymap::kKeymapTypeGame, "scumm-verbs", "SCUMM - Verb Navigation");
+
+	act = new Action(kStandardActionMoveUp, _("Navigate Verbs Up"));
+	act->setCustomEngineActionEvent(kScummActionVerbUp);
+	act->addDefaultInputMapping("UP");
+	act->addDefaultInputMapping("JOY_UP");
+	verbNavKeymap->addAction(act);
+
+	act = new Action(kStandardActionMoveDown, _("Navigate Verbs Down"));
+	act->setCustomEngineActionEvent(kScummActionVerbDown);
+	act->addDefaultInputMapping("DOWN");
+	act->addDefaultInputMapping("JOY_DOWN");
+	verbNavKeymap->addAction(act);
+
+	act = new Action(kStandardActionMoveLeft, _("Navigate Verbs Left"));
+	act->setCustomEngineActionEvent(kScummActionVerbLeft);
+	act->addDefaultInputMapping("LEFT");
+	act->addDefaultInputMapping("JOY_LEFT");
+	verbNavKeymap->addAction(act);
+
+	act = new Action(kStandardActionMoveRight, _("Navigate Verbs Right"));
+	act->setCustomEngineActionEvent(kScummActionVerbRight);
+	act->addDefaultInputMapping("RIGHT");
+	act->addDefaultInputMapping("JOY_RIGHT");
+	verbNavKeymap->addAction(act);
+
+	act = new Action("VERBSELECT", _("Select Verb"));
+	act->setCustomEngineActionEvent(kScummActionVerbSelect);
+	act->addDefaultInputMapping("RETURN");
+	act->addDefaultInputMapping("JOY_A");
+	verbNavKeymap->addAction(act);
+
+	keymaps.push_back(verbNavKeymap);
+
 	if (gameId == "ft") {
 		Keymap *insaneKeymap = new Keymap(Keymap::kKeymapTypeGame, insaneKeymapId, "SCUMM - Bike Fights");
 
