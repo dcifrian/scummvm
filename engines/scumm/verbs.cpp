@@ -731,20 +731,47 @@ void ScummEngine::processVerbNavigation() {
 			}
 		}
 
-		// If no verb above, wrap to bottom
+		// If no verb above, wrap to bottom of previous column (left)
 		if (bestIndex == -1) {
-			bestDistance = 999999;
+			// Find verbs to the left
+			int leftBestIndex = -1;
+			int leftBestY = -999999;
+			int leftBestX = -999999;
+
 			for (int i = 0; i < numVerbs; i++) {
 				if (i == _selectedVerbIndex) continue;
 				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
-				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
 				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
-				int dx = candX - currentX;
-				// Find bottommost verb closest to current X
-				int distance = dx * dx + (999999 - candY) * (999999 - candY) / 1000;
-				if (distance < bestDistance) {
-					bestDistance = distance;
-					bestIndex = i;
+				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+
+				// Find verbs to the left, pick bottommost, and among ties pick rightmost
+				if (candX < currentX) {
+					if (candY > leftBestY || (candY == leftBestY && candX > leftBestX)) {
+						leftBestY = candY;
+						leftBestX = candX;
+						leftBestIndex = i;
+					}
+				}
+			}
+
+			// If found a verb to the left, use it
+			if (leftBestIndex >= 0) {
+				bestIndex = leftBestIndex;
+			} else {
+				// Otherwise wrap to rightmost column, bottommost verb
+				int rightmostX = -999999;
+				int bottommostY = -999999;
+
+				for (int i = 0; i < numVerbs; i++) {
+					VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+					int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+					int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+
+					if (candX > rightmostX || (candX == rightmostX && candY > bottommostY)) {
+						rightmostX = candX;
+						bottommostY = candY;
+						bestIndex = i;
+					}
 				}
 			}
 		}
@@ -782,20 +809,47 @@ void ScummEngine::processVerbNavigation() {
 			}
 		}
 
-		// If no verb below, wrap to top
+		// If no verb below, wrap to top of next column (right)
 		if (bestIndex == -1) {
-			bestDistance = 999999;
+			// Find verbs to the right
+			int rightBestIndex = -1;
+			int rightBestY = 999999;
+			int rightBestX = 999999;
+
 			for (int i = 0; i < numVerbs; i++) {
 				if (i == _selectedVerbIndex) continue;
 				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
-				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
 				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
-				int dx = candX - currentX;
-				// Find topmost verb closest to current X
-				int distance = dx * dx + candY * candY / 1000;
-				if (distance < bestDistance) {
-					bestDistance = distance;
-					bestIndex = i;
+				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+
+				// Find verbs to the right, pick topmost, and among ties pick leftmost
+				if (candX > currentX) {
+					if (candY < rightBestY || (candY == rightBestY && candX < rightBestX)) {
+						rightBestY = candY;
+						rightBestX = candX;
+						rightBestIndex = i;
+					}
+				}
+			}
+
+			// If found a verb to the right, use it
+			if (rightBestIndex >= 0) {
+				bestIndex = rightBestIndex;
+			} else {
+				// Otherwise wrap to leftmost column, topmost verb
+				int leftmostX = 999999;
+				int topmostY = 999999;
+
+				for (int i = 0; i < numVerbs; i++) {
+					VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+					int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+					int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+
+					if (candX < leftmostX || (candX == leftmostX && candY < topmostY)) {
+						leftmostX = candX;
+						topmostY = candY;
+						bestIndex = i;
+					}
 				}
 			}
 		}
@@ -833,20 +887,47 @@ void ScummEngine::processVerbNavigation() {
 			}
 		}
 
-		// If no verb to the left, wrap to right
+		// If no verb to the left, wrap to end of previous row (reading order)
 		if (bestIndex == -1) {
-			bestDistance = 999999;
+			// Find verbs above in any column
+			int upBestIndex = -1;
+			int upBestY = -999999;
+			int upBestX = -999999;
+
 			for (int i = 0; i < numVerbs; i++) {
 				if (i == _selectedVerbIndex) continue;
 				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
-				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
 				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
-				int dy = candY - currentY;
-				// Find rightmost verb closest to current Y
-				int distance = (999999 - candX) * (999999 - candX) / 1000 + dy * dy;
-				if (distance < bestDistance) {
-					bestDistance = distance;
-					bestIndex = i;
+				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+
+				// Find verbs above, and among those pick the rightmost
+				if (candY < currentY) {
+					if (candY > upBestY || (candY == upBestY && candX > upBestX)) {
+						upBestY = candY;
+						upBestX = candX;
+						upBestIndex = i;
+					}
+				}
+			}
+
+			// If found a verb in a previous row, use it
+			if (upBestIndex >= 0) {
+				bestIndex = upBestIndex;
+			} else {
+				// Otherwise wrap to last verb overall (bottom-right)
+				int rightmostX = -999999;
+				int bottommostY = -999999;
+
+				for (int i = 0; i < numVerbs; i++) {
+					VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+					int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+					int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+
+					if (candY > bottommostY || (candY == bottommostY && candX > rightmostX)) {
+						rightmostX = candX;
+						bottommostY = candY;
+						bestIndex = i;
+					}
 				}
 			}
 		}
@@ -884,20 +965,47 @@ void ScummEngine::processVerbNavigation() {
 			}
 		}
 
-		// If no verb to the right, wrap to left
+		// If no verb to the right, wrap to start of next row (reading order)
 		if (bestIndex == -1) {
-			bestDistance = 999999;
+			// Find verbs below in any column
+			int downBestIndex = -1;
+			int downBestY = 999999;
+			int downBestX = 999999;
+
 			for (int i = 0; i < numVerbs; i++) {
 				if (i == _selectedVerbIndex) continue;
 				VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
-				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
 				int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
-				int dy = candY - currentY;
-				// Find leftmost verb closest to current Y
-				int distance = candX * candX / 1000 + dy * dy;
-				if (distance < bestDistance) {
-					bestDistance = distance;
-					bestIndex = i;
+				int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+
+				// Find verbs below, and among those pick the leftmost
+				if (candY > currentY) {
+					if (candY < downBestY || (candY == downBestY && candX < downBestX)) {
+						downBestY = candY;
+						downBestX = candX;
+						downBestIndex = i;
+					}
+				}
+			}
+
+			// If found a verb in a next row, use it
+			if (downBestIndex >= 0) {
+				bestIndex = downBestIndex;
+			} else {
+				// Otherwise wrap to first verb overall (top-left)
+				int leftmostX = 999999;
+				int topmostY = 999999;
+
+				for (int i = 0; i < numVerbs; i++) {
+					VerbSlot *candidateVerb = &_verbs[availableVerbs[i]];
+					int candX = (candidateVerb->curRect.left + candidateVerb->curRect.right) / 2;
+					int candY = (candidateVerb->curRect.top + candidateVerb->curRect.bottom) / 2;
+
+					if (candY < topmostY || (candY == topmostY && candX < leftmostX)) {
+						leftmostX = candX;
+						topmostY = candY;
+						bestIndex = i;
+					}
 				}
 			}
 		}
